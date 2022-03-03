@@ -8,7 +8,7 @@ if __name__ == "__main__":
     # 1 time unit here is 1s 
 
     # Network(weight_file='cx_model_table.xls', dt=1)
-    net = Network(dt=1)
+    net = Network(dt=0.01)
 
 
     net.add_neuron("E")
@@ -17,6 +17,9 @@ if __name__ == "__main__":
     # set "N" / "Taum"
     net.set_neuron_param("E", "Taum", 3)
     net.set_neuron_param("I", "Taum", 5)
+
+    # add_group(group_name, *member_name)
+    net.add_group('EI', 'E', 'I')
 
     # add_target(pre, post, weight)
     net.add_target("E", "E", 1.0)
@@ -32,7 +35,7 @@ if __name__ == "__main__":
     net.add_event(30, "EndTrial")
 
     # set_ltp(pre, post, learning_rate=5, pre_threshold=1, post_threshold=1)
-    net.set_ltp("E", "I")
+    # net.set_ltp("E", "I")
 
     # simulate(solver='EULER', active_func='sqrt', a=0, b=0, group=True)
     # ative_func = 'sqrt' or 'sigmoid' or 'ReLU'
@@ -49,4 +52,5 @@ if __name__ == "__main__":
     plt.savefig('firing_rate.png')
 
     # output .conf .pro, just for debugging
-    net.output()
+    # output_population = 'AllPopulation' or 'group_name' or 'neuron_name'
+    net.output(output_population='EI')
