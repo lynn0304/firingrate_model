@@ -85,10 +85,10 @@ class Network():
             times = self.dt
         if type(event_type) == type(1):
             for i in range(time, event_type*times+1):
-                event = Event(i, event_type*times, *args)
+                event = Event(i, event_type*times, self.dt, *args)
                 self.eve.append(event)
         else:
-            event = Event(time*times, event_type, *args)
+            event = Event(time*times, event_type, self.dt, *args)
             self.eve.append(event)
         if event_type == 'EndTrial':
             self.EndTrial = time*times
@@ -102,7 +102,7 @@ class Network():
         new_weight = now_weight + learning_rate*(pre_rate - pre_threshold)*(post_rate - post_threshold)*self.dt
         self.neu[pre][1].target[post].weight = new_weight
 
-    def output(self, filename_conf='network.conf', filename_pro='network.pro', group=True):
+    def output(self, output_population='AllPopulation', filename_conf='network.conf', filename_pro='network.pro', group=True):
         fout = open(filename_conf, 'w')
         for neu in self.neu.values():
             fout.write('%( '+ neu[1].name + ' --> ')
@@ -113,9 +113,16 @@ class Network():
                         fout.write(post+':'+str(neu[1].target[post].weight)+' )\n')
                     else:
                         fout.write(post+':'+str(neu[1].target[post].weight)+', ')   
-                idx += 1        
-        for neu in self.neu.values():
-            neu[1].output(fout)
+                idx += 1    
+        if output_population == 'AllPopulation':    
+            for neu in self.neu.values():
+                neu[1].output(fout)
+        elif output_population in self.neu.keys():
+            self.neu[output_population][1].output(fout)
+        elif output_population in self.group.keys():
+            for neu in self.group[output_population].member:
+                self.neu[neu][1].output(fout)
+
         if group:
             fout.write('-----------------------------------------------\n')
             for gro in self.group.values():
@@ -125,7 +132,7 @@ class Network():
         for event in self.eve:
             event.output(fout)
 
-    def add_connection(self, sheet_name='EPG_EPG'):
+    def add_connection(self, sheet_name='EPG_EPG', type='excitation'):
         data = xlrd.open_workbook(self.weight_file)
         # table = data.sheets()[0], read by index
         table = data.sheet_by_name(sheet_name)
@@ -136,7 +143,11 @@ class Network():
                 if table.cell_value(row, col) != 0:
                     pre = str(table.cell_value(row, 0))
                     post = str(table.cell_value(0, col))
-                    self.add_target(pre, post, weight=table.cell_value(row, col))                        
+                    if type=='excitation':
+                        weight = table.cell_value(row, col)
+                    elif type=='inhibition':
+                        weight = -table.cell_value(row, col)
+                    self.add_target(pre, post, weight=weight)                        
 
     def simulate(self, solver='EULER', active_func='sqrt', a=0, b=0, group=True):
         def sort_event():
@@ -158,8 +169,14 @@ class Network():
                 return 1/(1+np.exp(-a*(h-b)))
             elif mode == 'ReLU':
                 return max(0, h)
+        
+        def set_fire_arr():
+            lengh = int((1/self.dt)*self.EndTrial)
+            for neu in self.neu.values():
+                neu[1].firing_rate = np.zeros((lengh+1))
 
         sort_event()
+        set_fire_arr()
         eve_id = 0
         timestamp = 0
         event_happen = False
@@ -217,7 +234,7 @@ class Network():
                         r_now = self.neu[neu][1].firing_rate[timestamp]
                         tau = self.neu[neu][1].Taum
                         r_next = r_now - r_now/tau + h/tau
-                        self.neu[neu][1].firing_rate.append(r_next)
+                        self.neu[neu][1].firing_rate[timestamp+1] = (r_next)
                 loop += 1
 
             if event_happen!=True:
@@ -242,7 +259,7 @@ class Network():
                     tau = self.neu[neu][1].Taum
                     r_now = self.neu[neu][1].firing_rate[timestamp]
                     r_next = r_now - r_now/tau + h/tau
-                    self.neu[neu][1].firing_rate.append(r_next)
+                    self.neu[neu][1].firing_rate[timestamp+1] = (r_next)
             timestamp+=1
 
     
@@ -346,9 +363,11 @@ class Group():
 
 class Event():
     
-    def __init__(self, time, event_type, *args):
+    def __init__(self, time, event_type, dt, *args):
         self.time = time
         self.type = event_type
+        self.dt = dt
+        self.timestamp = int(1/self.dt)
         if type(event_type) == type(1):
             self.end_time = event_type
             self.population = args[0]
@@ -357,21 +376,23 @@ class Event():
             pass
 
     def output(self, fout):
-        if type(self.type) == type(1):
+        if type(self.type) == type(1) and self.time%self.timestamp == 0:
             fout.write(
-                    f'EventTime {self.time}\n'
+                    f'EventTime {self.time/self.timestamp}\n'
                     'Type=Input\n'
                     f'Population: {self.population}\n'
                     f'Strength={self.strength}\n'
-                    'EndEvent at ' + str(self.end_time) + '\n\n'
+                    'EndEvent at ' + str(self.end_time/self.timestamp) + '\n\n'
                 )
         elif self.type == 'EndTrial':
             fout.write(
-                    f'EventTime {self.time}\n'
+                    f'EventTime {self.time/self.timestamp}\n'
                     'Type=EndTrial' + '\n'
                     'EndEvent' + '\n\n\n'
                 )
 
+
+            
 
 
     
