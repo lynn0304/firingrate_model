@@ -171,7 +171,7 @@ class Network():
                 return max(0, h)
         
         def set_fire_arr():
-            lengh = int((1/self.dt)*self.EndTrial)
+            lengh = int(self.EndTrial)
             for neu in self.neu.values():
                 neu[1].firing_rate = np.zeros((lengh+1))
 
