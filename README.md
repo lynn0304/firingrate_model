@@ -9,3 +9,7 @@
     net.output(output_population='AllPopulation', filename_conf='network.conf', filename_pro='network.pro', group=True)
     ```
 * changes firing rate array memory allocation method from using append to using np.array() while starting simulate() 
+
+0307 update
+
+* fixed the firing rate array's length bug
