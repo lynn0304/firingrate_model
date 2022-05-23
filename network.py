@@ -83,9 +83,13 @@ class Network():
             times = int(1/self.dt)
         else:
             times = self.dt
-        if type(event_type) == type(1):
-            for i in range(time, event_type*times+1):
-                event = Event(i, event_type*times, self.dt, *args)
+        if type(event_type) == type(1) or type(event_type) == type(0.1):
+            if str(event_type*times).find('.') == -1:
+                end_time = int(event_type*times)+1
+            else:
+                end_time = int(event_type*times)
+            for i in range(time, end_time+1):
+                event = Event(i, end_time, self.dt, *args)
                 self.eve.append(event)
         else:
             event = Event(time*times, event_type, self.dt, *args)
