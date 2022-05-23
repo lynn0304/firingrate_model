@@ -84,10 +84,8 @@ class Network():
         else:
             times = self.dt
         if type(event_type) == type(1) or type(event_type) == type(0.1):
-            if str(event_type*times).find('.') == -1:
-                end_time = int(event_type*times)+1
-            else:
-                end_time = int(event_type*times)
+            end_time = int(math.floor(event_type)*times)
+            time = int(math.ceil(time)*times)
             for i in range(time, end_time+1):
                 event = Event(i, end_time, self.dt, *args)
                 self.eve.append(event)
