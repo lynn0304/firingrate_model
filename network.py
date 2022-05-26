@@ -83,7 +83,7 @@ class Network():
             times = int(1/self.dt)
         else:
             times = self.dt
-        if type(event_type) == type(1) or type(event_type) == type(0.1):
+        if np.issubdtype(type(event_type), np.number):
             end_time = math.floor(event_type*times)
             time = math.ceil(time*times)
             for i in range(time, end_time+1):
@@ -370,7 +370,7 @@ class Event():
         self.type = event_type
         self.dt = dt
         self.timestamp = int(1/self.dt)
-        if type(event_type) == type(1):
+        if np.issubdtype(type(event_type), np.number):
             self.end_time = event_type
             self.population = args[0]
             self.strength = args[1]
@@ -378,7 +378,7 @@ class Event():
             pass
 
     def output(self, fout):
-        if type(self.type) == type(1) and self.time%self.timestamp == 0:
+        if np.issubdtype(type(self.type), np.number) and self.time%self.timestamp == 0:
             fout.write(
                     f'EventTime {self.time/self.timestamp}\n'
                     'Type=Input\n'
