@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # net.add_connection(sheet_name='EPG_EPG')
 
     # add_event(strat_time, end_time, target, weight)
-    net.add_event(0, 29.9, "I", 0.4)
+    net.add_event(1.5, 29.9, "I", 0.4)
     net.add_event(0, 15, "E", 5.0)
     net.add_event(30, "EndTrial")
 
