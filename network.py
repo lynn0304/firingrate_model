@@ -51,19 +51,51 @@ class Network():
             neu[1].set_param(N, Taum*times)
 
     def add_target(self, pre_syn, post_syn, weight=0):
-        if post_syn in self.neu[pre_syn][1].target:
-            self.neu[pre_syn][1].target[post_syn].weight = weight
+        if pre_syn in self.group.keys() and post_syn not in self.group.keys():
+            for neu in self.group[pre_syn].member:
+                if post_syn in self.neu[neu][1].target:
+                    self.neu[neu][1].target[post_syn].weight = weight
+                else:
+                    self.neu[neu][1].add_target(post_syn, weight)
+                if neu in self.neu[post_syn][1].upstream:
+                    self.neu[post_syn][1].upstream[neu].weight = weight
+                else:
+                    self.neu[post_syn][1].add_upstream(neu, weight)
+        elif post_syn in self.group.keys() and pre_syn not in self.group.keys():
+            for neu in self.group[post_syn].member:
+                if neu in self.neu[pre_syn][1].target:
+                    self.neu[pre_syn][1].target[neu].weight = weight
+                else:
+                    self.neu[pre_syn][1].add_target(neu, weight)
+                if pre_syn in self.neu[neu][1].upstream:
+                    self.neu[neu][1].upstream[pre_syn].weight = weight
+                else:
+                    self.neu[neu][1].add_upstream(pre_syn, weight)
+        elif post_syn in self.group.keys() and pre_syn in self.group.keys():
+            for neu1 in self.group[pre_syn].member:         
+                for neu2 in self.group[post_syn].member:        
+                    if neu2 in self.neu[neu1][1].target:
+                        self.neu[neu1][1].target[neu2].weight = weight
+                    else:
+                        self.neu[neu1][1].add_target(neu2, weight)
+                    if neu1 in self.neu[neu2][1].upstream:
+                        self.neu[neu2][1].upstream[neu1].weight = weight
+                    else:
+                        self.neu[neu2][1].add_upstream(neu1, weight) 
         else:
-            self.neu[pre_syn][1].add_target(post_syn, weight)
-        if pre_syn in self.neu[post_syn][1].upstream:
-            self.neu[post_syn][1].upstream[pre_syn].weight = weight
-        else:
-            self.neu[post_syn][1].add_upstream(pre_syn, weight)
+            if post_syn in self.neu[pre_syn][1].target:
+                self.neu[pre_syn][1].target[post_syn].weight = weight
+            else:
+                self.neu[pre_syn][1].add_target(post_syn, weight)
+            if pre_syn in self.neu[post_syn][1].upstream:
+                self.neu[post_syn][1].upstream[pre_syn].weight = weight
+            else:
+                self.neu[post_syn][1].add_upstream(pre_syn, weight)
 
     def set_target_param(self, pre_syn, post_syn, param, value):
         setattr(self.neu[pre_syn][1].target[post_syn], param, value)
 
-    def add_group(self, group_name, *member_name):
+    def add_group(self, group_name, member_name):
         subgroup = [m for m in member_name if m in self.group.keys()]
         if subgroup:  # if there is sub_group_name in member_name, unpack the sub_group
             for g in subgroup:
@@ -83,11 +115,9 @@ class Network():
             times = int(1/self.dt)
         else:
             times = self.dt
-        if np.issubdtype(type(event_type), np.number):
-            end_time = math.floor(event_type*times)
-            time = math.ceil(time*times)
-            for i in range(time, end_time+1):
-                event = Event(i, end_time, self.dt, *args)
+        if type(event_type) == type(1):
+            for i in range(time, event_type*times+1):
+                event = Event(i, event_type*times, self.dt, *args)
                 self.eve.append(event)
         else:
             event = Event(time*times, event_type, self.dt, *args)
@@ -370,7 +400,7 @@ class Event():
         self.type = event_type
         self.dt = dt
         self.timestamp = int(1/self.dt)
-        if np.issubdtype(type(event_type), np.number):
+        if type(event_type) == type(1):
             self.end_time = event_type
             self.population = args[0]
             self.strength = args[1]
@@ -378,7 +408,7 @@ class Event():
             pass
 
     def output(self, fout):
-        if np.issubdtype(type(self.type), np.number) and self.time%self.timestamp == 0:
+        if type(self.type) == type(1) and self.time%self.timestamp == 0:
             fout.write(
                     f'EventTime {self.time/self.timestamp}\n'
                     'Type=Input\n'
