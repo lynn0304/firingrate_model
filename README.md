@@ -14,6 +14,9 @@
 
 * fixed the firing rate array's length bug
 
+***
+
+
 230522 update
 
 * Add function for adding group targets
