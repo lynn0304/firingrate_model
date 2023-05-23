@@ -20,3 +20,9 @@
 230522 update
 
 * Add function for adding group targets
+
+0523 update
+
+* Correct Event function
+* Add function for group event
+* Add learning function, WTA
