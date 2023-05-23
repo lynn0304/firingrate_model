@@ -95,7 +95,7 @@ class Network():
     def set_target_param(self, pre_syn, post_syn, param, value):
         setattr(self.neu[pre_syn][1].target[post_syn], param, value)
 
-    def add_group(self, group_name, member_name):
+    def add_group(self, group_name, member_name, WTA=False):
         subgroup = [m for m in member_name if m in self.group.keys()]
         if subgroup:  # if there is sub_group_name in member_name, unpack the sub_group
             for g in subgroup:
@@ -109,6 +109,9 @@ class Network():
             tmp_group = Group(group_name)
             tmp_group.add_member_list(member_name)
             self.group[group_name] = tmp_group
+            
+        if WTA==True:
+            self.group[group_name].add_WTA()
 
     def add_event(self, time, event_type, *args):
         if self.dt < 1:
@@ -116,11 +119,16 @@ class Network():
         else:
             times = self.dt
         if type(event_type) == type(1):
-            for i in range(time, event_type*times+1):
-                event = Event(i, event_type*times, self.dt, *args)
-                self.eve.append(event)
+            for i in range(time*times, event_type*times+1):
+                if args[0] in self.group.keys():
+                    for neu1 in self.group[args[0]].member:
+                        event = Event(i, event_type*times, self.dt, neu1, args[1])
+                        self.eve.append(event)
+                else:
+                    event = Event(i*times, event_type*times, self.dt, *args)
+                    self.eve.append(event)
         else:
-            event = Event(time*times, event_type, self.dt, *args)
+            event = Event(time*times, event_type*times, self.dt, *args)
             self.eve.append(event)
         if event_type == 'EndTrial':
             self.EndTrial = time*times
@@ -292,6 +300,17 @@ class Network():
                     r_now = self.neu[neu][1].firing_rate[timestamp]
                     r_next = r_now - r_now/tau + h/tau
                     self.neu[neu][1].firing_rate[timestamp+1] = (r_next)
+            for grp in self.group.keys():
+                if self.group[grp].WTA==True:
+                    max_firerate=0
+                    max_id=""
+                    for neu in self.group[grp].member:
+                        if self.neu[neu][1].firing_rate[timestamp+1]>=max_firerate:
+                            max_firerate=self.neu[neu][1].firing_rate[timestamp+1]
+                            max_id=self.neu[neu][1].name
+                    for neu in self.group[grp].member:
+                        if self.neu[neu][1].name!=max_id:
+                            self.neu[neu][1].firing_rate[timestamp+1]=0
             timestamp+=1
 
     
@@ -320,6 +339,7 @@ class NeuralPopulation():
         self.firing_rate = [0]
         self.add_upstream(self.name)
         self.add_target(self.name)
+        self.WTA = False
     
     def set_param(self, N, Taum):
         self.N = N
@@ -378,16 +398,21 @@ class Group():
     def __init__(self, name):
         self.name = name
         self.member = []
+        self.WTA = False
 
     def add_member(self, member_name):
         self.member.append(member_name)
 
     def add_member_list(self, member_list):
         self.member.extend(member_list)
+        
+    def add_WTA(self):
+        self.WTA=True
 
     def output(self, fout):
         fout.write(
                 f'GroupName:{self.name}\n'
+                f'WTA:{self.WTA}\n'
                 'GroupMembers:')
         print(*self.member, sep=',', file=fout)
         fout.write('EndGroupMembers' + '\n\n')
