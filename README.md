@@ -26,3 +26,7 @@
 * Correct Event function
 * Add function for group event
 * Add learning function, WTA
+
+0524 update
+
+* Fixed some bugs in adding event and simulation function
